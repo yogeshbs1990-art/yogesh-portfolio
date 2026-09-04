@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Site Dashboard — Yogesh Salunkhe</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root{
+    --blue:#2861F0; --blue-dark:#1943C9; --ink:#232323; --muted:#8d8d8d;
+    --bg:#F5F6F8; --card:#fff; --border:#E7E8EC; --danger:#E0483E; --ok:#1E9E5A;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+    background:var(--bg); color:var(--ink);
+  }
+  a{ color:inherit; }
+
+  /* ---- Login gate ---- */
+  #loginGate{
+    display:none; min-height:100vh; align-items:center; justify-content:center;
+    flex-direction:column; gap:18px;
+  }
+  #loginGate.show{ display:flex; }
+  .login-card{
+    background:var(--card); border-radius:16px; padding:40px 36px;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,.15); width:100%; max-width:380px; text-align:center;
+  }
+  .login-card h1{ font-size:22px; margin:0 0 6px; }
+  .login-card p{ color:var(--muted); font-size:14px; margin:0 0 22px; }
+  .login-card input{
+    width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--border);
+    font-size:15px; margin-bottom:12px; font-family:inherit;
+  }
+  .login-card button{
+    width:100%; padding:12px 14px; border-radius:10px; border:none;
+    background:var(--blue); color:#fff; font-weight:600; font-size:15px; cursor:pointer;
+  }
+  .login-card button:hover{ background:var(--blue-dark); }
+  .login-status{ font-size:13px; margin-top:10px; min-height:18px; }
+  .login-status.err{ color:var(--danger); }
+  .login-status.ok{ color:var(--ok); }
+  .login-card .security-note{
+    text-align:left; background:#FFF6E5; border:1px solid #F3D98B; border-radius:10px;
+    padding:12px 14px; font-size:12.5px; line-height:1.55; color:#6b5a1e; margin-top:16px;
+  }
+  #configWarning{
+    display:none; max-width:520px; background:#FFF6E5; border:1px solid #F3D98B;
+    border-radius:12px; padding:18px 20px; font-size:13.5px; line-height:1.6;
+  }
+  #configWarning.show{ display:block; }
+  #configWarning code{ background:#00000010; padding:2px 6px; border-radius:5px; }
+
+  /* ---- Shell layout ---- */
+  #shell{ display:none; min-height:100vh; }
+  #shell.show{ display:flex; }
+  .sidebar{
+    width:230px; flex:none; background:#1B1E27; color:#fff; padding:24px 0;
+    display:flex; flex-direction:column; position:sticky; top:0; height:100vh;
+  }
+  .sidebar .brand{ padding:0 22px 22px; font-weight:700; font-size:16px; border-bottom:1px solid #2E3140; margin-bottom:14px; }
+  .sidebar .brand span{ display:block; font-weight:400; font-size:12px; color:#9297AC; margin-top:2px; }
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:12px 22px; cursor:pointer;
+    font-size:14.5px; color:#C7CAD8; border-left:3px solid transparent;
+  }
+  .nav-item:hover{ background:#242733; color:#fff; }
+  .nav-item.active{ background:#242733; color:#fff; border-left-color:var(--blue); font-weight:600; }
+  .nav-item .dot{ width:7px; height:7px; border-radius:50%; background:#575C6E; flex:none; }
+  .nav-item.active .dot{ background:var(--blue); }
+  .sidebar .logout{
+    margin-top:auto; padding:14px 22px; font-size:13px; color:#9297AC; cursor:pointer;
+  }
+  .sidebar .logout:hover{ color:#fff; }
+
+  .main{ flex:1; padding:32px 40px 80px; max-width:980px; }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+  .panel h2{ font-size:24px; margin:0 0 6px; }
+  .panel > p.sub{ color:var(--muted); font-size:14px; margin:0 0 28px; }
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:24px 26px; margin-bottom:22px;
+  }
+  .card h3{ font-size:16px; margin:0 0 4px; }
+  .card p.hint{ color:var(--muted); font-size:13px; margin:0 0 16px; }
+
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:#4A4D57; }
+  .field input[type=text], .field input[type=number], .field textarea, .field select{
+    width:100%; padding:10px 12px; border-radius:9px; border:1px solid var(--border);
+    font-size:14px; font-family:inherit;
+  }
+  .field textarea{ resize:vertical; min-height:80px; }
+
+  .upload-row{ display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+  .upload-preview{
+    width:120px; height:90px; border-radius:10px; border:1px solid var(--border);
+    background:#F0F1F4; display:flex; align-items:center; justify-content:center;
+    overflow:hidden; flex:none; color:var(--muted); font-size:12px; text-align:center;
+  }
+  .upload-preview img{ width:100%; height:100%; object-fit:cover; }
+  .upload-preview.pdf{ background:linear-gradient(135deg,#3C3C3C,#232323); color:#fff; font-weight:700; }
+  .upload-controls{ flex:1; min-width:200px; }
+  .file-input-btn{
+    display:inline-block; padding:9px 16px; border-radius:8px; border:1px solid var(--border);
+    background:#fff; font-size:13.5px; cursor:pointer; font-weight:600;
+  }
+  .file-input-btn:hover{ border-color:var(--blue); color:var(--blue); }
+  .file-input-btn input{ display:none; }
+  .file-name{ font-size:12.5px; color:var(--muted); margin-top:8px; word-break:break-all; }
+
+  .btn{
+    padding:11px 20px; border-radius:9px; border:none; font-weight:600; font-size:14px;
+    cursor:pointer; display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn-primary{ background:var(--blue); color:#fff; }
+  .btn-primary:hover{ background:var(--blue-dark); }
+  .btn-secondary{ background:#EDEEF2; color:var(--ink); }
+  .btn-secondary:hover{ background:#E1E3E9; }
+  .btn-danger{ background:#FCE9E7; color:var(--danger); }
+  .btn-danger:hover{ background:#F8D5D1; }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+  .status-msg{ font-size:13px; margin-top:12px; min-height:18px; }
+  .status-msg.ok{ color:var(--ok); }
+  .status-msg.err{ color:var(--danger); }
+
+  /* ---- Featured Projects picker ---- */
+  .picker-available{ display:flex; flex-wrap:wrap; gap:8px; }
+  .picker-chip{
+    padding:8px 14px; border-radius:20px; border:1px solid var(--border); font-size:13px;
+    cursor:pointer; background:#fff; font-weight:500;
+  }
+  .picker-chip:hover{ border-color:var(--blue); color:var(--blue); }
+  .picker-chip:disabled{ opacity:.4; cursor:not-allowed; }
+  .picked-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
+  .picked-item{
+    display:flex; align-items:center; gap:10px; padding:10px 12px;
+    border:1px solid var(--border); border-radius:10px; background:#F9FAFC;
+  }
+  .picked-item .picked-num{
+    width:22px; height:22px; border-radius:50%; background:var(--blue); color:#fff;
+    font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .picked-item .picked-label{ flex:1; font-size:14px; font-weight:600; }
+  .picked-item .picked-actions{ display:flex; gap:4px; }
+  .picked-item .picked-actions button{
+    width:28px; height:28px; border-radius:6px; border:1px solid var(--border);
+    background:#fff; cursor:pointer; font-size:13px; padding:0;
+  }
+  .picked-item .picked-actions button:hover{ border-color:var(--blue); }
+  .picked-item .picked-actions button:disabled{ opacity:.35; cursor:not-allowed; }
+  .picked-empty{ color:var(--muted); font-size:13.5px; padding:8px 0; }
+
+  /* ---- Projects list ---- */
+  .toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .proj-table{ width:100%; border-collapse:collapse; }
+  .proj-table th{ text-align:left; font-size:12px; color:var(--muted); padding:0 10px 10px; font-weight:600; }
+  .proj-table td{ padding:12px 10px; border-top:1px solid var(--border); vertical-align:middle; font-size:13.5px; }
+  .proj-thumb{ width:52px; height:40px; border-radius:6px; object-fit:cover; display:block; background:#F0F1F4; }
+  .badge{ display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; }
+  .badge-featured{ background:#E7EEFF; color:var(--blue); }
+  .badge-none{ background:#F0F1F4; color:var(--muted); }
+  .row-actions{ display:flex; gap:8px; }
+  .row-actions button{ padding:6px 12px; font-size:12.5px; }
+
+  .tools-grid{ display:flex; flex-wrap:wrap; gap:10px; }
+  .tool-chip{
+    display:flex; align-items:center; gap:6px; padding:7px 12px; border-radius:20px;
+    border:1px solid var(--border); font-size:13px; cursor:pointer; user-select:none;
+  }
+  .tool-chip input{ margin:0; }
+  .tool-chip.checked{ background:#E7EEFF; border-color:var(--blue); color:var(--blue); font-weight:600; }
+
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(20,20,30,.5);
+    align-items:center; justify-content:center; z-index:100; padding:20px;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-box{
+    background:#fff; border-radius:16px; padding:28px 30px; max-width:560px; width:100%;
+    max-height:88vh; overflow-y:auto;
+  }
+  .modal-box h3{ margin:0 0 18px; }
+  .modal-close-row{ display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
+
+  .empty-state{ color:var(--muted); font-size:13.5px; padding:20px 0; text-align:center; }
+</style>
+</head>
+<body>
+
+<!-- ============ Config warning (shown if GitHub owner/repo not filled in) ============ -->
+<div id="configWarning">
+  <strong>Setup needed:</strong> open this file and paste your <code>GITHUB_OWNER</code> and
+  <code>GITHUB_REPO</code> near the top of the script — see <code>SETUP_GUIDE.md</code> for the
+  step-by-step (pushing this project to a public GitHub repo, and creating a fine-grained
+  Personal Access Token scoped to just that repo).
+</div>
+
+<!-- ============ Login gate ============ -->
+<div id="loginGate">
+  <div class="login-card">
+    <h1>Site Dashboard</h1>
+    <p>Enter your GitHub Personal Access Token to manage the site.</p>
+    <input type="password" id="patInput" placeholder="Personal Access Token" autocomplete="off" onkeydown="if(event.key==='Enter') document.getElementById('loginBtn').click();">
+    <button id="loginBtn">Log in</button>
+    <div class="login-status" id="loginStatus"></div>
+    <div class="security-note">
+      This token grants direct write access to your GitHub repository — treat it like a
+      password to your code. Use a <strong>fine-grained token scoped to just this one repo</strong>
+      with Contents read/write only (see SETUP_GUIDE.md). It's kept only for this browser
+      session — log out when you're done editing.
+    </div>
+  </div>
+</div>
+
+<!-- ============ Dashboard shell ============ -->
+<div id="shell">
+  <div class="sidebar">
+    <div class="brand">Yogesh Salunkhe<span>Site Dashboard</span></div>
+    <div class="nav-item active" data-panel="panel-settings"><span class="dot"></span> Site Settings</div>
+    <div class="nav-item" data-panel="panel-featured"><span class="dot"></span> Featured Projects</div>
+    <div class="nav-item" data-panel="panel-projects"><span class="dot"></span> All Projects</div>
+    <div class="logout" id="logoutBtn">Log out</div>
+  </div>
+
+  <div class="main">
+
+    <!-- ============ PANEL: Site Settings ============ -->
+    <div class="panel active" id="panel-settings">
+      <h2>Site Settings</h2>
+      <p class="sub">These control the logo, hero photo, and About page across the whole site. Leave a field blank to keep the current design as-is.</p>
+
+      <div class="card">
+        <h3>Logo</h3>
+        <p class="hint">Replaces the logo in the navigation bar on every page (Home, About, Projects).</p>
+        <div class="upload-row">
+          <div class="upload-preview" id="logoPreview">No custom logo set</div>
+          <div class="upload-controls">
+            <label class="file-input-btn">Choose image
+              <input type="file" accept="image/*" id="logoFile">
+            </label>
+            <div class="file-name" id="logoFileName"></div>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" id="saveLogoBtn">Save logo</button>
+          <button class="btn btn-secondary" id="resetLogoBtn">Reset to default</button>
+        </div>
+        <div class="status-msg" id="logoStatus"></div>
+      </div>
+
+      <div class="card">
+        <h3>Hero photo</h3>
+        <p class="hint">Replaces your portrait in the homepage hero section.</p>
+        <div class="upload-row">
+          <div class="upload-preview" id="heroPreview">No custom photo set</div>
+          <div class="upload-controls">
+            <label class="file-input-btn">Choose image
+              <input type="file" accept="image/*" id="heroFile">
+            </label>
+            <div class="file-name" id="heroFileName"></div>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" id="saveHeroBtn">Save hero photo</button>
+          <button class="btn btn-secondary" id="resetHeroBtn">Reset to default</button>
+        </div>
+        <div class="status-msg" id="heroStatus"></div>
+      </div>
+
+      <div class="card">
+        <h3>About page photo</h3>
+        <p class="hint">Replaces your headshot on the About page.</p>
+        <div class="upload-row">
+          <div class="upload-preview" id="aboutPhotoPreview">No custom photo set</div>
+          <div class="upload-controls">
+            <label class="file-input-btn">Choose image
+              <input type="file" accept="image/*" id="aboutPhotoFile">
+            </label>
+            <div class="file-name" id="aboutPhotoFileName"></div>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" id="saveAboutPhotoBtn">Save photo</button>
+          <button class="btn btn-secondary" id="resetAboutPhotoBtn">Reset to default</button>
+        </div>
+        <div class="status-msg" id="aboutPhotoStatus"></div>
+      </div>
+
+      <div class="card">
+        <h3>About page text</h3>
+        <p class="hint">
+          <strong>Only visible on phones</strong> — the desktop About page's headline and bio are
+          part of the artwork and can't be changed here. Leave a field blank to keep its current wording.
+        </p>
+        <div class="field">
+          <label>Headline (name)</label>
+          <input type="text" id="aboutHeadlineInput" placeholder="e.g. Yogesh Salunkhe">
+        </div>
+        <div class="field">
+          <label>Tagline</label>
+          <input type="text" id="aboutTaglineInput" placeholder="e.g. Strong passion for branding, UI, and immersive learning.">
+        </div>
+        <div class="field">
+          <label>Bio — separate paragraphs with a blank line</label>
+          <textarea id="aboutBioInput" style="min-height:160px;" placeholder="First paragraph.&#10;&#10;Second paragraph."></textarea>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" id="saveAboutTextBtn">Save About text</button>
+          <button class="btn btn-secondary" id="resetAboutTextBtn">Reset to default</button>
+        </div>
+        <div class="status-msg" id="aboutTextStatus"></div>
+      </div>
+    </div>
+
+    <!-- ============ PANEL: Featured Projects ============ -->
+    <div class="panel" id="panel-featured">
+      <h2>Featured Projects</h2>
+      <p class="sub">Pick up to 6 projects for the homepage's Featured Projects section, and use the arrows to set their order. Any of the 6 positions you don't fill keeps its original card.</p>
+
+      <div class="card">
+        <h3>Your featured order (<span id="featuredCount">0</span>/6)</h3>
+        <div class="picked-list" id="featuredPicked"></div>
+        <div id="featuredPickedEmpty" class="picked-empty">No picks yet — all 6 homepage cards show their original design.</div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-primary" id="saveFeaturedBtn">Save order</button>
+          <button class="btn btn-secondary" id="resetFeaturedBtn">Reset to original 6</button>
+        </div>
+        <div class="status-msg" id="featuredStatus"></div>
+      </div>
+
+      <div class="card">
+        <h3>Available projects</h3>
+        <p class="hint">Click a project to add it to your featured order above (max 6).</p>
+        <div class="picker-available" id="featuredAvailable"></div>
+      </div>
+    </div>
+
+    <!-- ============ PANEL: All Projects ============ -->
+    <div class="panel" id="panel-projects">
+      <h2>All Projects</h2>
+      <p class="sub">Projects you add here appear in "More Projects" on the homepage and in the full Projects page — automatically filed under the category you choose.</p>
+
+      <div class="toolbar">
+        <div></div>
+        <button class="btn btn-primary" id="addProjectBtn">+ Add new project</button>
+      </div>
+
+      <div class="card" style="padding:0;">
+        <table class="proj-table" id="projTable">
+          <thead>
+            <tr><th></th><th>Title</th><th>Category</th><th>Pinned</th><th>Project file</th><th></th></tr>
+          </thead>
+          <tbody id="projTableBody"></tbody>
+        </table>
+        <div class="empty-state" id="projEmptyState" style="display:none;">No uploaded projects yet — add your first one above.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ Add/Edit Project Modal ============ -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal-box">
+    <h3 id="projectModalTitle">Add new project</h3>
+
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="pTitle" placeholder="e.g. Sunday Family Ride">
+    </div>
+
+    <div class="field">
+      <label>Eyebrow label (shown on the card, e.g. "Illustration")</label>
+      <input type="text" id="pEyebrow" placeholder="e.g. Illustration">
+    </div>
+
+    <div class="field">
+      <label>Journey category (controls Projects page filtering)</label>
+      <select id="pCategory">
+        <option>Illustration &amp; Visual Storytelling</option>
+        <option>Brand Identity &amp; Print</option>
+        <option>Campaigns &amp; Marketing</option>
+        <option>Motion &amp; Storyboarding</option>
+        <option>AI-Enhanced Design</option>
+        <option>Digital &amp; UI/UX</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Description</label>
+      <textarea id="pDesc" placeholder="A short description shown in the project detail view."></textarea>
+    </div>
+
+    <div class="field">
+      <label>Tools used</label>
+      <div class="tools-grid" id="pToolsGrid"></div>
+    </div>
+
+    <div class="field">
+      <label style="display:flex; align-items:center; gap:8px; font-weight:600;">
+        <input type="checkbox" id="pPinned" style="width:auto;"> Pin to top (shows first in "All Projects")
+      </label>
+    </div>
+
+    <div class="field">
+      <label>Thumbnail — shown on the card (required: PNG or JPEG)</label>
+      <div class="upload-row">
+        <div class="upload-preview" id="pThumbPreview">No file chosen</div>
+        <div class="upload-controls">
+          <label class="file-input-btn">Choose image
+            <input type="file" accept="image/*" id="pThumbFile">
+          </label>
+          <div class="file-name" id="pThumbFileName"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Project file — shown when someone opens the project (optional: PNG, JPEG, or PDF; leave blank to just reuse the thumbnail)</label>
+      <div class="upload-row">
+        <div class="upload-preview" id="pFilePreview">No file chosen</div>
+        <div class="upload-controls">
+          <label class="file-input-btn">Choose file
+            <input type="file" accept="image/*,application/pdf" id="pFile">
+          </label>
+          <div class="file-name" id="pFileName"></div>
+          <button type="button" class="btn btn-secondary" id="pFileClearBtn" style="margin-top:8px; padding:6px 12px; font-size:12.5px;">Remove project file</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-msg" id="projectModalStatus"></div>
+
+    <div class="modal-close-row">
+      <button class="btn btn-secondary" id="projectModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="projectModalSave">Save project</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  // ============================================================
+  // CONFIG — paste your repo details (see SETUP_GUIDE.md)
+  // ============================================================
+  var GITHUB_OWNER = 'yogeshbs1990-art';
+  var GITHUB_REPO = 'yogesh-portfolio';
+  var GITHUB_BRANCH = 'main';
+  // ============================================================
+
+  var DATA_PATH = 'data/site-data.json';
+  var UPLOADS_DIR = 'assets/uploads/';
+
+  var isConfigured = GITHUB_OWNER.indexOf('PASTE_') === -1 && GITHUB_REPO.indexOf('PASTE_') === -1;
+  if(!isConfigured){
+    document.getElementById('configWarning').className += ' show';
+  } else {
+    document.getElementById('loginGate').className += ' show';
+  }
+
+  var githubPat = sessionStorage.getItem('githubPat') || '';
+
+  /* Every project this dashboard knows how to feature that ISN'T a CMS
+     upload - the site's hardcoded catalogue. Titles mirror the `projects`
+     object in yogesh-portfolio.html; keep in sync if that ever changes. */
+  var STATIC_PROJECTS = [
+    { key:'scooter', label:'Sunday Family Ride' },
+    { key:'jeepney', label:'Rise of DDC Studio' },
+    { key:'spicy', label:'Mental Health - Eustress' },
+    { key:'wumb', label:'Wumb' },
+    { key:'burger', label:'Hot & Delicious' },
+    { key:'opti', label:'Opti' },
+    { key:'safetyvideo', label:'Safety Video' },
+    { key:'khayalrakhna', label:'Khayal Rakhna' },
+    { key:'gemini', label:'Gemini - Morning to Night (WFH)' },
+    { key:'gemini2', label:'Gemini - Morning to Night (Market)' },
+    { key:'gemini3', label:'Gemini - Morning to Night (Party)' },
+    { key:'mentalhealth2', label:'Mental Health' },
+    { key:'madhavdairy', label:'Madhav Dairy' },
+    { key:'brickersfoundation', label:'Brickers Foundation' },
+    { key:'careershots', label:'CareerShots' }
+  ];
+
+  var TOOL_OPTIONS = [
+    {key:'ai', label:'Illustrator'}, {key:'ps', label:'Photoshop'}, {key:'ae', label:'After Effects'},
+    {key:'pr', label:'Premiere Pro'}, {key:'fr', label:'Fresco'}, {key:'an', label:'Animate'},
+    {key:'xd', label:'XD'}, {key:'figma', label:'Figma'},
+    {key:'ff', label:'Firefly'}, {key:'gpt', label:'ChatGPT'}, {key:'gemini', label:'Gemini'}
+  ];
+
+  // ============================================================
+  // GitHub Contents API helpers
+  // ============================================================
+  function ghHeaders(extra){
+    var h = {
+      'Authorization': 'token ' + githubPat,
+      'Accept': 'application/vnd.github+json'
+    };
+    if(extra) for(var k in extra) h[k] = extra[k];
+    return h;
+  }
+
+  function apiUrl(path){
+    return 'https://api.github.com/repos/' + GITHUB_OWNER + '/' + GITHUB_REPO + '/contents/' + path;
+  }
+
+  /* UTF-8-safe base64 (plain btoa/atob mangles non-ASCII, e.g. typographic quotes in bio text) */
+  function utf8ToBase64(str){
+    var bytes = new TextEncoder().encode(str), binary = '', chunk = 0x8000;
+    for(var i = 0; i < bytes.length; i += chunk){
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+  function base64ToUtf8(b64){
+    var binary = atob(b64.replace(/\n/g, ''));
+    var bytes = new Uint8Array(binary.length);
+    for(var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  /* GET a file's current sha + decoded text content, or null if it doesn't exist yet */
+  function ghGetFile(path){
+    return fetch(apiUrl(path) + '?ref=' + GITHUB_BRANCH, { headers: ghHeaders() }).then(function(res){
+      if(res.status === 404) return null;
+      if(!res.ok) return res.json().then(function(body){ throw new Error(body.message || ('GitHub error ' + res.status)); });
+      return res.json().then(function(body){
+        return { sha: body.sha, text: base64ToUtf8(body.content) };
+      });
+    });
+  }
+
+  /* PUT (create or update) a file. base64Content is the raw base64 payload (no data: prefix). */
+  function ghPutFile(path, base64Content, message, sha){
+    var body = { message: message, content: base64Content, branch: GITHUB_BRANCH };
+    if(sha) body.sha = sha;
+    return fetch(apiUrl(path), {
+      method: 'PUT',
+      headers: ghHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body)
+    }).then(function(res){
+      if(!res.ok) return res.json().then(function(errBody){ throw new Error(errBody.message || ('GitHub error ' + res.status)); });
+      return res.json();
+    });
+  }
+
+  function ghDeleteFile(path, sha, message){
+    return fetch(apiUrl(path), {
+      method: 'DELETE',
+      headers: ghHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ message: message, sha: sha, branch: GITHUB_BRANCH })
+    }).catch(function(){ /* best-effort cleanup - ignore failures */ });
+  }
+
+  function slugify(str){
+    return (str || 'project').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'project';
+  }
+
+  function extFromFile(file){
+    var byName = (file.name || '').split('.').pop();
+    if(byName && byName.length <= 5) return byName.toLowerCase();
+    if(file.type === 'application/pdf') return 'pdf';
+    return 'jpg';
+  }
+
+  /* Uploads one file to assets/uploads/<ts>-<slug>-<suffix>.<ext> (always a
+     fresh path, so it's always a create - no sha to track for binaries). */
+  function uploadBinary(dataUrl, file, titleForSlug, suffix){
+    var base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
+    var ext = extFromFile(file);
+    var path = UPLOADS_DIR + Date.now() + '-' + slugify(titleForSlug) + '-' + suffix + '.' + ext;
+    return ghPutFile(path, base64, 'CMS: upload ' + suffix + ' for "' + titleForSlug + '"', null).then(function(res){
+      return { path: path, url: res.content.download_url };
+    });
+  }
+
+  // ---- Image compression (mirrors the main site's approach: JPEG data URI) ----
+  var MAX_DIM = 1400;
+  var JPEG_QUALITY = 0.85;
+
+  function compressImage(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var img = new Image();
+        img.onload = function(){
+          var width = img.width, height = img.height;
+          if(width > height && width > MAX_DIM){
+            height = Math.round(height * (MAX_DIM / width));
+            width = MAX_DIM;
+          } else if(height > MAX_DIM){
+            width = Math.round(width * (MAX_DIM / height));
+            height = MAX_DIM;
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function readFileAsDataUrl(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(e){ resolve(e.target.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function showStatus(el, message, ok){
+    el.textContent = message;
+    el.className = 'status-msg ' + (ok ? 'ok' : 'err');
+  }
+
+  // ---- File pickers with live preview (works for any upload-preview + file input pair) ----
+  function wireFilePreview(inputEl, previewEl, fileNameEl, onFile){
+    inputEl.addEventListener('change', function(){
+      var file = inputEl.files[0];
+      if(!file) return;
+      fileNameEl.textContent = file.name;
+      previewEl.classList.remove('pdf');
+      previewEl.innerHTML = '';
+      if(file.type === 'application/pdf'){
+        previewEl.classList.add('pdf');
+        previewEl.textContent = 'PDF';
+      } else {
+        var reader = new FileReader();
+        reader.onload = function(e){
+          previewEl.innerHTML = '<img src="' + e.target.result + '" alt="">';
+        };
+        reader.readAsDataURL(file);
+      }
+      if(onFile) onFile(file);
+    });
+  }
+
+  // ============================================================
+  // NAVIGATION
+  // ============================================================
+  document.querySelectorAll('.nav-item[data-panel]').forEach(function(item){
+    item.addEventListener('click', function(){
+      document.querySelectorAll('.nav-item[data-panel]').forEach(function(n){ n.classList.remove('active'); });
+      document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+      item.classList.add('active');
+      document.getElementById(item.getAttribute('data-panel')).classList.add('active');
+    });
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', function(){
+    sessionStorage.removeItem('githubPat');
+    location.reload();
+  });
+
+  // ============================================================
+  // SHARED DATA-FILE READ/MODIFY/WRITE
+  // ============================================================
+  var DEFAULT_DATA = {
+    version: 1, updatedAt: null,
+    logo: { url:null }, hero: { url:null },
+    about: { photoUrl:null, headline:null, tagline:null, bio:null },
+    featured: [], projects: []
+  };
+  var currentData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+
+  /* Every mutation goes through here: fresh GET (for a current sha) -> apply
+     mutatorFn -> PUT with that sha. Re-fetching the sha right before every
+     write (rather than caching it across the session) keeps this simple and
+     avoids sha-conflict/retry logic, since CMS saves are infrequent. */
+  function saveSiteData(mutatorFn, statusEl, doneMsg){
+    return ghGetFile(DATA_PATH).then(function(file){
+      var data = file ? JSON.parse(file.text) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+      data = mutatorFn(data) || data;
+      data.updatedAt = new Date().toISOString();
+      var content = utf8ToBase64(JSON.stringify(data, null, 2));
+      return ghPutFile(DATA_PATH, content, 'CMS: update site data', file ? file.sha : null).then(function(){
+        currentData = data;
+        if(statusEl) showStatus(statusEl, doneMsg, true);
+        return data;
+      });
+    }).catch(function(err){
+      if(statusEl) showStatus(statusEl, 'Could not save: ' + err.message, false);
+      throw err;
+    });
+  }
+
+  // ============================================================
+  // SITE SETTINGS
+  // ============================================================
+  function renderSettingsPreviews(){
+    var logoPrev = document.getElementById('logoPreview');
+    logoPrev.innerHTML = currentData.logo.url ? '<img src="' + currentData.logo.url + '" alt="">' : 'No custom logo set';
+
+    var heroPrev = document.getElementById('heroPreview');
+    heroPrev.innerHTML = currentData.hero.url ? '<img src="' + currentData.hero.url + '" alt="">' : 'No custom photo set';
+
+    var photoPrev = document.getElementById('aboutPhotoPreview');
+    photoPrev.innerHTML = currentData.about.photoUrl ? '<img src="' + currentData.about.photoUrl + '" alt="">' : 'No custom photo set';
+
+    document.getElementById('aboutHeadlineInput').value = currentData.about.headline || '';
+    document.getElementById('aboutTaglineInput').value = currentData.about.tagline || '';
+    document.getElementById('aboutBioInput').value = Array.isArray(currentData.about.bio) ? currentData.about.bio.join('\n\n') : '';
+  }
+
+  var pendingLogoFile = null, pendingHeroFile = null, pendingAboutPhotoFile = null;
+
+  wireFilePreview(document.getElementById('logoFile'), document.getElementById('logoPreview'), document.getElementById('logoFileName'), function(file){ pendingLogoFile = file; });
+  wireFilePreview(document.getElementById('heroFile'), document.getElementById('heroPreview'), document.getElementById('heroFileName'), function(file){ pendingHeroFile = file; });
+  wireFilePreview(document.getElementById('aboutPhotoFile'), document.getElementById('aboutPhotoPreview'), document.getElementById('aboutPhotoFileName'), function(file){ pendingAboutPhotoFile = file; });
+
+  function saveImageSetting(pendingFile, slugLabel, suffix, applyFn, statusEl, doneMsg){
+    if(!pendingFile){ showStatus(statusEl, 'Choose an image first.', false); return; }
+    compressImage(pendingFile).then(function(dataUrl){
+      return uploadBinary(dataUrl, pendingFile, slugLabel, suffix);
+    }).then(function(uploaded){
+      return saveSiteData(function(data){ applyFn(data, uploaded.url); return data; }, statusEl, doneMsg);
+    }).then(renderSettingsPreviews).catch(function(err){
+      showStatus(statusEl, 'Could not save: ' + err.message, false);
+    });
+  }
+
+  document.getElementById('saveLogoBtn').addEventListener('click', function(){
+    saveImageSetting(pendingLogoFile, 'logo', 'logo', function(data, url){ data.logo.url = url; },
+      document.getElementById('logoStatus'), 'Logo saved — live on the site within a few minutes.');
+  });
+  document.getElementById('resetLogoBtn').addEventListener('click', function(){
+    saveSiteData(function(data){ data.logo.url = null; return data; }, document.getElementById('logoStatus'), 'Reset to the original logo.').then(renderSettingsPreviews);
+  });
+
+  document.getElementById('saveHeroBtn').addEventListener('click', function(){
+    saveImageSetting(pendingHeroFile, 'hero', 'hero', function(data, url){ data.hero.url = url; },
+      document.getElementById('heroStatus'), 'Hero photo saved — live on the site within a few minutes.');
+  });
+  document.getElementById('resetHeroBtn').addEventListener('click', function(){
+    saveSiteData(function(data){ data.hero.url = null; return data; }, document.getElementById('heroStatus'), 'Reset to the original hero photo.').then(renderSettingsPreviews);
+  });
+
+  document.getElementById('saveAboutPhotoBtn').addEventListener('click', function(){
+    saveImageSetting(pendingAboutPhotoFile, 'about-photo', 'about-photo', function(data, url){ data.about.photoUrl = url; },
+      document.getElementById('aboutPhotoStatus'), 'Photo saved — live on the site within a few minutes.');
+  });
+  document.getElementById('resetAboutPhotoBtn').addEventListener('click', function(){
+    saveSiteData(function(data){ data.about.photoUrl = null; return data; }, document.getElementById('aboutPhotoStatus'), 'Reset to the original photo.').then(renderSettingsPreviews);
+  });
+
+  document.getElementById('saveAboutTextBtn').addEventListener('click', function(){
+    var statusEl = document.getElementById('aboutTextStatus');
+    var headline = document.getElementById('aboutHeadlineInput').value.trim();
+    var tagline = document.getElementById('aboutTaglineInput').value.trim();
+    var bioRaw = document.getElementById('aboutBioInput').value.trim();
+    var bio = bioRaw ? bioRaw.split(/\n\s*\n/).map(function(p){ return p.trim(); }).filter(Boolean) : null;
+    saveSiteData(function(data){
+      if(headline) data.about.headline = headline;
+      if(tagline) data.about.tagline = tagline;
+      if(bio) data.about.bio = bio;
+      return data;
+    }, statusEl, 'Saved — live on the mobile site within a few minutes.').then(renderSettingsPreviews);
+  });
+  document.getElementById('resetAboutTextBtn').addEventListener('click', function(){
+    saveSiteData(function(data){
+      data.about.headline = null; data.about.tagline = null; data.about.bio = null;
+      return data;
+    }, document.getElementById('aboutTextStatus'), 'Reset to the original wording.').then(renderSettingsPreviews);
+  });
+
+  // ============================================================
+  // FEATURED PROJECTS PICKER
+  // ============================================================
+  function featuredCatalogue(){
+    return STATIC_PROJECTS.concat((currentData.projects || []).map(function(p){
+      return { key: 'upload-' + p.id, label: p.title };
+    }));
+  }
+  function labelFor(key){
+    var found = featuredCatalogue().filter(function(c){ return c.key === key; })[0];
+    return found ? found.label : key;
+  }
+
+  function renderFeatured(){
+    var picked = currentData.featured || [];
+    document.getElementById('featuredCount').textContent = picked.length;
+
+    var pickedWrap = document.getElementById('featuredPicked');
+    var pickedEmpty = document.getElementById('featuredPickedEmpty');
+    pickedWrap.innerHTML = '';
+    pickedEmpty.style.display = picked.length ? 'none' : 'block';
+
+    picked.forEach(function(key, i){
+      var row = document.createElement('div');
+      row.className = 'picked-item';
+      row.innerHTML =
+        '<span class="picked-num">' + (i + 1) + '</span>' +
+        '<span class="picked-label">' + labelFor(key) + '</span>' +
+        '<span class="picked-actions">' +
+          '<button data-move-up="' + i + '" ' + (i === 0 ? 'disabled' : '') + ' title="Move up">&uarr;</button>' +
+          '<button data-move-down="' + i + '" ' + (i === picked.length - 1 ? 'disabled' : '') + ' title="Move down">&darr;</button>' +
+          '<button data-remove="' + i + '" title="Remove">&times;</button>' +
+        '</span>';
+      pickedWrap.appendChild(row);
+    });
+
+    pickedWrap.querySelectorAll('[data-move-up]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var i = Number(btn.getAttribute('data-move-up'));
+        var arr = currentData.featured.slice();
+        var tmp = arr[i - 1]; arr[i - 1] = arr[i]; arr[i] = tmp;
+        currentData.featured = arr;
+        renderFeatured();
+      });
+    });
+    pickedWrap.querySelectorAll('[data-move-down]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var i = Number(btn.getAttribute('data-move-down'));
+        var arr = currentData.featured.slice();
+        var tmp = arr[i + 1]; arr[i + 1] = arr[i]; arr[i] = tmp;
+        currentData.featured = arr;
+        renderFeatured();
+      });
+    });
+    pickedWrap.querySelectorAll('[data-remove]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var i = Number(btn.getAttribute('data-remove'));
+        currentData.featured = currentData.featured.slice(0, i).concat(currentData.featured.slice(i + 1));
+        renderFeatured();
+      });
+    });
+
+    var availWrap = document.getElementById('featuredAvailable');
+    availWrap.innerHTML = '';
+    var atCap = picked.length >= 6;
+    featuredCatalogue().forEach(function(c){
+      if(picked.indexOf(c.key) !== -1) return;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'picker-chip';
+      btn.textContent = '+ ' + c.label;
+      btn.disabled = atCap;
+      btn.addEventListener('click', function(){
+        currentData.featured = (currentData.featured || []).concat([c.key]);
+        renderFeatured();
+      });
+      availWrap.appendChild(btn);
+    });
+  }
+
+  document.getElementById('saveFeaturedBtn').addEventListener('click', function(){
+    var statusEl = document.getElementById('featuredStatus');
+    var picks = currentData.featured || [];
+    saveSiteData(function(data){ data.featured = picks; return data; }, statusEl, 'Saved — live on the homepage within a few minutes.');
+  });
+  document.getElementById('resetFeaturedBtn').addEventListener('click', function(){
+    currentData.featured = [];
+    renderFeatured();
+    saveSiteData(function(data){ data.featured = []; return data; }, document.getElementById('featuredStatus'), 'Reset to the original 6 cards.');
+  });
+
+  // ============================================================
+  // PROJECTS (All Projects panel)
+  // ============================================================
+  var editingProjectId = null;
+
+  function renderToolsGrid(selectedTools){
+    var grid = document.getElementById('pToolsGrid');
+    grid.innerHTML = '';
+    TOOL_OPTIONS.forEach(function(t){
+      var chip = document.createElement('label');
+      var checked = (selectedTools || []).indexOf(t.key) !== -1;
+      chip.className = 'tool-chip' + (checked ? ' checked' : '');
+      chip.innerHTML = '<input type="checkbox" value="' + t.key + '" ' + (checked ? 'checked' : '') + '> ' + t.label;
+      chip.querySelector('input').addEventListener('change', function(e){
+        chip.classList.toggle('checked', e.target.checked);
+      });
+      grid.appendChild(chip);
+    });
+  }
+
+  function getSelectedTools(){
+    return Array.prototype.slice.call(document.querySelectorAll('#pToolsGrid input:checked')).map(function(i){ return i.value; });
+  }
+
+  var pendingThumbFile = null;
+  var pendingProjectFile = null; // File object, or 'clear' to explicitly remove an existing one
+  var existingThumbnail = null;  // {path, url} already saved, kept if no new thumbnail chosen
+  var existingProjectFile = null; // {path, url, type} already saved
+
+  wireFilePreview(document.getElementById('pThumbFile'), document.getElementById('pThumbPreview'), document.getElementById('pThumbFileName'), function(file){
+    pendingThumbFile = file;
+  });
+  wireFilePreview(document.getElementById('pFile'), document.getElementById('pFilePreview'), document.getElementById('pFileName'), function(file){
+    pendingProjectFile = file;
+  });
+  document.getElementById('pFileClearBtn').addEventListener('click', function(){
+    pendingProjectFile = 'clear';
+    existingProjectFile = null;
+    document.getElementById('pFilePreview').classList.remove('pdf');
+    document.getElementById('pFilePreview').innerHTML = 'No file chosen';
+    document.getElementById('pFileName').textContent = '';
+    document.getElementById('pFile').value = '';
+  });
+
+  function openProjectModal(project){
+    editingProjectId = project ? project.id : null;
+    document.getElementById('projectModalTitle').textContent = project ? 'Edit project' : 'Add new project';
+    document.getElementById('pTitle').value = project ? project.title : '';
+    document.getElementById('pEyebrow').value = project ? project.eyebrow : '';
+    document.getElementById('pCategory').value = project ? project.journeyCategory : 'Illustration & Visual Storytelling';
+    document.getElementById('pDesc').value = project ? project.description : '';
+    document.getElementById('pPinned').checked = project ? !!project.pinned : false;
+    renderToolsGrid(project ? project.tools : []);
+
+    pendingThumbFile = null;
+    pendingProjectFile = null;
+    existingThumbnail = project ? project.thumbnail : null;
+    existingProjectFile = project ? project.projectFile : null;
+
+    var thumbPreview = document.getElementById('pThumbPreview');
+    thumbPreview.innerHTML = existingThumbnail && existingThumbnail.url ? '<img src="' + existingThumbnail.url + '" alt="">' : 'No file chosen';
+    document.getElementById('pThumbFileName').textContent = '';
+    document.getElementById('pThumbFile').value = '';
+
+    var filePreview = document.getElementById('pFilePreview');
+    filePreview.classList.remove('pdf');
+    if(existingProjectFile && existingProjectFile.type === 'pdf'){
+      filePreview.classList.add('pdf');
+      filePreview.textContent = 'PDF';
+    } else if(existingProjectFile && existingProjectFile.url){
+      filePreview.innerHTML = '<img src="' + existingProjectFile.url + '" alt="">';
+    } else {
+      filePreview.innerHTML = 'No file chosen';
+    }
+    document.getElementById('pFileName').textContent = '';
+    document.getElementById('pFile').value = '';
+
+    document.getElementById('projectModalStatus').textContent = '';
+    document.getElementById('projectModal').classList.add('show');
+  }
+
+  document.getElementById('addProjectBtn').addEventListener('click', function(){ openProjectModal(null); });
+  document.getElementById('projectModalCancel').addEventListener('click', function(){
+    document.getElementById('projectModal').classList.remove('show');
+  });
+
+  document.getElementById('projectModalSave').addEventListener('click', function(){
+    var statusEl = document.getElementById('projectModalStatus');
+    var saveBtn = document.getElementById('projectModalSave');
+    var title = document.getElementById('pTitle').value.trim();
+    if(!title){ showStatus(statusEl, 'Please enter a title.', false); return; }
+    if(!pendingThumbFile && !(existingThumbnail && existingThumbnail.url)){
+      showStatus(statusEl, 'Please choose a thumbnail image.', false); return;
+    }
+
+    saveBtn.disabled = true;
+    showStatus(statusEl, 'Saving…', true);
+
+    var thumbPromise = pendingThumbFile
+      ? compressImage(pendingThumbFile).then(function(dataUrl){ return uploadBinary(dataUrl, pendingThumbFile, title, 'thumb'); })
+      : Promise.resolve(existingThumbnail);
+
+    var filePromise;
+    if(pendingProjectFile === 'clear'){
+      filePromise = Promise.resolve(null);
+    } else if(pendingProjectFile){
+      filePromise = (pendingProjectFile.type === 'application/pdf'
+        ? readFileAsDataUrl(pendingProjectFile)
+        : compressImage(pendingProjectFile)
+      ).then(function(dataUrl){
+        return uploadBinary(dataUrl, pendingProjectFile, title, 'file').then(function(uploaded){
+          uploaded.type = pendingProjectFile.type === 'application/pdf' ? 'pdf' : 'image';
+          return uploaded;
+        });
+      });
+    } else {
+      filePromise = Promise.resolve(existingProjectFile);
+    }
+
+    Promise.all([thumbPromise, filePromise]).then(function(results){
+      var thumbnail = results[0], projectFile = results[1];
+      return saveSiteData(function(data){
+        var payload = {
+          id: editingProjectId || (slugify(title) + '-' + Date.now().toString(36)),
+          title: title,
+          eyebrow: document.getElementById('pEyebrow').value.trim() || 'Project',
+          journeyCategory: document.getElementById('pCategory').value,
+          description: document.getElementById('pDesc').value.trim(),
+          pinned: document.getElementById('pPinned').checked,
+          tools: getSelectedTools(),
+          thumbnail: thumbnail,
+          projectFile: projectFile || null
+        };
+        var list = data.projects || [];
+        var idx = editingProjectId ? list.findIndex(function(p){ return p.id === editingProjectId; }) : -1;
+        if(idx !== -1) list[idx] = payload; else list.push(payload);
+        data.projects = list;
+        return data;
+      }, null, null);
+    }).then(function(){
+      document.getElementById('projectModal').classList.remove('show');
+      renderProjectsTable();
+      renderFeatured();
+    }).catch(function(err){
+      showStatus(statusEl, 'Could not save: ' + err.message, false);
+    }).then(function(){
+      saveBtn.disabled = false;
+    });
+  });
+
+  function renderProjectsTable(){
+    var tbody = document.getElementById('projTableBody');
+    var emptyState = document.getElementById('projEmptyState');
+    var data = (currentData.projects || []).slice().sort(function(a, b){
+      return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+    });
+
+    if(data.length === 0){
+      tbody.innerHTML = '';
+      emptyState.style.display = 'block';
+      emptyState.textContent = 'No uploaded projects yet — add your first one above.';
+      return;
+    }
+    emptyState.style.display = 'none';
+    tbody.innerHTML = '';
+    data.forEach(function(p){
+      var tr = document.createElement('tr');
+      var thumbTd = document.createElement('td');
+      if(p.thumbnail && p.thumbnail.url){
+        var img = document.createElement('img');
+        img.className = 'proj-thumb'; img.src = p.thumbnail.url; img.alt = '';
+        thumbTd.appendChild(img);
+      }
+      var titleTd = document.createElement('td'); titleTd.textContent = p.title;
+      var catTd = document.createElement('td'); catTd.textContent = p.eyebrow;
+      var pinnedTd = document.createElement('td');
+      pinnedTd.innerHTML = p.pinned ? '<span class="badge badge-featured">Pinned</span>' : '<span class="badge badge-none">—</span>';
+      var fileTd = document.createElement('td');
+      fileTd.textContent = p.projectFile ? (p.projectFile.type === 'pdf' ? 'PDF' : 'Image') : 'Thumbnail only';
+      var actionsTd = document.createElement('td');
+      actionsTd.innerHTML = '<div class="row-actions"><button class="btn btn-secondary" data-edit>Edit</button><button class="btn btn-danger" data-delete>Delete</button></div>';
+
+      tr.appendChild(thumbTd); tr.appendChild(titleTd); tr.appendChild(catTd);
+      tr.appendChild(pinnedTd); tr.appendChild(fileTd); tr.appendChild(actionsTd);
+      tbody.appendChild(tr);
+
+      tr.querySelector('[data-edit]').addEventListener('click', function(){ openProjectModal(p); });
+      tr.querySelector('[data-delete]').addEventListener('click', function(){
+        if(!confirm('Delete "' + p.title + '"? This cannot be undone.')) return;
+        saveSiteData(function(data){
+          data.projects = (data.projects || []).filter(function(x){ return x.id !== p.id; });
+          data.featured = (data.featured || []).filter(function(k){ return k !== 'upload-' + p.id; });
+          return data;
+        }, null, null).then(function(){
+          if(p.thumbnail && p.thumbnail.path) ghDeleteFile(p.thumbnail.path, null, 'CMS: delete thumbnail for "' + p.title + '"');
+          if(p.projectFile && p.projectFile.path) ghDeleteFile(p.projectFile.path, null, 'CMS: delete project file for "' + p.title + '"');
+          renderProjectsTable();
+          renderFeatured();
+        }).catch(function(err){ alert('Could not delete: ' + err.message); });
+      });
+    });
+  }
+
+  // ============================================================
+  // LOGIN
+  // ============================================================
+  document.getElementById('loginBtn').addEventListener('click', function(){
+    var pat = document.getElementById('patInput').value.trim();
+    var statusEl = document.getElementById('loginStatus');
+    var loginBtn = document.getElementById('loginBtn');
+    if(!pat){ showStatus(statusEl, 'Enter your token.', false); return; }
+    loginBtn.disabled = true;
+    showStatus(statusEl, 'Checking…', true);
+
+    fetch('https://api.github.com/repos/' + GITHUB_OWNER + '/' + GITHUB_REPO, {
+      headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github+json' }
+    }).then(function(res){
+      loginBtn.disabled = false;
+      if(!res.ok){
+        showStatus(statusEl, res.status === 401 || res.status === 403 ? 'Invalid token.' : 'Repository not found — check GITHUB_OWNER/GITHUB_REPO in this file.', false);
+        return;
+      }
+      return res.json().then(function(repo){
+        if(repo.permissions && repo.permissions.push === false){
+          showStatus(statusEl, 'This token doesn’t have write access to the repo.', false);
+          return;
+        }
+        githubPat = pat;
+        sessionStorage.setItem('githubPat', pat);
+        enterDashboard();
+      });
+    }).catch(function(){
+      loginBtn.disabled = false;
+      showStatus(statusEl, 'Could not connect — check your internet connection and try again.', false);
+    });
+  });
+
+  function enterDashboard(){
+    document.getElementById('loginGate').classList.remove('show');
+    document.getElementById('shell').classList.add('show');
+    ghGetFile(DATA_PATH).then(function(file){
+      currentData = file ? JSON.parse(file.text) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+      currentData.logo = currentData.logo || { url:null };
+      currentData.hero = currentData.hero || { url:null };
+      currentData.about = currentData.about || { photoUrl:null, headline:null, tagline:null, bio:null };
+      currentData.featured = currentData.featured || [];
+      currentData.projects = currentData.projects || [];
+      renderSettingsPreviews();
+      renderFeatured();
+      renderProjectsTable();
+    }).catch(function(err){
+      alert('Could not load site data: ' + err.message);
+    });
+  }
+
+  // If we already have a remembered token this session, skip straight to the dashboard.
+  if(isConfigured && githubPat){
+    enterDashboard();
+  }
+
+})();
+</script>
+</body>
+</html>

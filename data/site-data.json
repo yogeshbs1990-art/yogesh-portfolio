@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "updatedAt": null,
+  "logo": { "url": null },
+  "hero": { "url": null },
+  "about": { "photoUrl": null, "headline": null, "tagline": null, "bio": null },
+  "featured": [],
+  "projects": []
+}
